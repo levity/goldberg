@@ -8,6 +8,7 @@ gem 'sass', '~> 3.1.2'
 gem 'commander', '~> 4.0.4'
 gem 'childprocess', '~> 0.1.9'
 gem 'json', :platforms => [:ruby_18, :jruby]
+gem 'jab'
 
 platform :jruby do
   gem 'jdbc-sqlite3', '~> 3.6.0'
