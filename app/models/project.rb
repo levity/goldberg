@@ -1,6 +1,9 @@
 require "fileutils"
+require 'thread'
 
 class Project < ActiveRecord::Base
+  @@config_lock = Mutex.new
+  
   has_many :builds, :dependent => :destroy
   after_destroy :remove
   delegate :number, :status, :build_log, :timestamp, :to => :latest_build, :prefix => true
@@ -108,16 +111,14 @@ class Project < ActiveRecord::Base
   end
 
   def config
-    self.class.temp_config = Configuration.new
-    if File.exists?(File.expand_path('goldberg_config.rb', self.code_path))
-      config_code = Environment.read_file(File.expand_path('goldberg_config.rb', self.code_path))
-      eval(config_code)
+    @@config_lock.synchronize do
+      self.class.temp_config = Configuration.new
+      [self.code_path, self.path].each do |pth|
+        expanded_pth = File.expand_path('goldberg_config.rb', pth)        
+        eval(Environment.read_file(expanded_pth)) if File.exists? expanded_pth
+      end
+      self.class.temp_config
     end
-    if File.exists?(File.expand_path('goldberg_config.rb', self.path))
-      config_code = Environment.read_file(File.expand_path('goldberg_config.rb', self.path))
-      eval(config_code)
-    end
-    self.class.temp_config
   end
 
   def self.configure
